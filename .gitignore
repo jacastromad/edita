@@ -1,0 +1,105 @@
+# Android Studio
+.idea
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+/.idea/gradle.xml
+.DS_Store
+
+# Android specific
+*.iml
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# App-specific build directories
+app/build/
+app/release/
+
+# Kotlin specific
+*.kt.class
+*.kotlin_module
+
+# Jetpack Compose
+.compose-cache
+
+# Gradle
+.gradle
+!gradle-wrapper.jar
+!**/gradle-wrapper.properties
+gradle-app.setting
+
+# Signed APKs
+*.jks
+
+# Personal configuration files
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/sslKeystore
+.idea/modules
+.idea/.name
+.idea/gradle.xml
+.idea/encodings.xml
+.idea/copyright
+.idea/codeStyles
+.idea/codeStyles/Project.xml
+.idea/codeStyles/codeStyleConfig.xml
+.idea/inspectionProfiles/Project_Default.xml
+.idea/inspectionProfiles/profiles_settings.xml
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.orig
+
+# Log files
+*.log
+
+# Android Studio Navigation Editor temp files
+.navigation/
+
+# Android Studio captures folder
+captures/
+
+# IntelliJ
+*.iws
+*.ipr
+
+# Keystore files
+*.jks
+*.keystore
+
+# Proguard folder generated at build time
+proguard/
+
+# Gradle files
+gradle-wrapper.properties
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Android build cache (new to v2.4)
+.cache/
+
