@@ -34,5 +34,4 @@ For any questions or feedback, please open an issue on the [GitHub repository](h
 
 ---
 
-Thank you for using Edita!
 
