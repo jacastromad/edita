@@ -1,6 +1,6 @@
 # Edita
 
-![Edita Logo](edita_logo.webp)
+![Edita Text Editor](featgraph.png)
 
 ## Overview
 
@@ -16,10 +16,6 @@ Edita offers a variety of customizable settings to enhance your editing experien
 - **Auto Indent**: Automatically indent new lines to maintain code structure and readability.
 - **Theme Options**: Choose from system theme, dark theme, or light theme based on your preference.
 
-## Installation
-
-Edita can be installed through the Google Play Store. 
-
 ## Usage
 
 Open the application and start typing! Edita provides a minimalist interface to keep you focused on your text. Use the menu options for additional functionality like saving files, opening existing documents, changing settings, and more.
@@ -32,6 +28,10 @@ Edita is licensed under the BSD 3-Clause License. See the [LICENSE](LICENSE) fil
 
 For any questions or feedback, please open an issue on the [GitHub repository](https://github.com/jacastromad/edita/issues).
 
----
+<center>
+  <img src="edita_logo.webp" alt="Edita Logo">
+</center>
 
+
+---
 
