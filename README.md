@@ -6,6 +6,16 @@
 
 Just a simple, free, open source, monospace text editor. No ads. No premium version. **Edita** does not collect or transmit any information and runs entirely on your device.
 
+## Screenshots
+
+<div style="text-align: center;">
+  <img src="Screenshot01.png" alt="Screenshot 1" width=200>
+  <img src="Screenshot02.png" alt="Screenshot 2" width=200>
+  <img src="Screenshot03.png" alt="Screenshot 3" width=200>
+  <img src="Screenshot04.png" alt="Screenshot 4" width=200>
+  <img src="Screenshot05.png" alt="Screenshot 5" width=300>
+</div>
+
 ## Settings
 
 Edita offers a variety of customizable settings to enhance your editing experience:
@@ -18,7 +28,8 @@ Edita offers a variety of customizable settings to enhance your editing experien
 
 ## Usage
 
-Open the application and start typing! Edita provides a minimalist interface to keep you focused on your text. Use the menu options for additional functionality like saving files, opening existing documents, changing settings, and more.
+Open the application and start typing!
+Use the menu options for additional functionality like saving files, opening existing documents, changing settings, and more.
 
 ## License
 
@@ -28,10 +39,7 @@ Edita is licensed under the BSD 3-Clause License. See the [LICENSE](LICENSE) fil
 
 For any questions or feedback, please open an issue on the [GitHub repository](https://github.com/jacastromad/edita/issues).
 
-<center>
-  <img src="edita_logo.webp" alt="Edita Logo">
-</center>
-
+![Edita Text Editor](edita_logo.webp)
 
 ---
 
