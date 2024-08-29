@@ -16,20 +16,22 @@ Just a simple, free, open source, monospace text editor. No ads. No premium vers
   <img src="Screenshot05.png" alt="Screenshot 5" width=300>
 </div>
 
+## Installation
+
+You can download and install Edita from [Google Play](https://play.google.com/store/apps/details?id=com.github.jacastromad.edita)
+
 ## Settings
 
-Edita offers a variety of customizable settings to enhance your editing experience:
+Edita comes with a variety of customizable settings:
 
 - **Display Line Numbers**: Toggle line numbers on or off for easier code navigation.
 - **Adjustable Font Size**: Customize the font size to suit your reading and writing preferences.
 - **Word Wrap**: Enable or disable word wrap to control how long lines of text are handled.
 - **Auto Indent**: Automatically indent new lines to maintain code structure and readability.
+- **Highlight Selection**: Highlight every instance of the selected text.
+- **Show Invisibles**: Show invisible characters like Enter or Tab.
+- **Soft Tabs and Tab Stop**: Choose the number of spaces to insert instead of tabs.
 - **Theme Options**: Choose from system theme, dark theme, or light theme based on your preference.
-
-## Usage
-
-Open the application and start typing!
-Use the menu options for additional functionality like saving files, opening existing documents, changing settings, and more.
 
 ## License
 
