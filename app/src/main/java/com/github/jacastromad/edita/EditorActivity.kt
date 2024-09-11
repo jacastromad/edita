@@ -34,12 +34,14 @@ import androidx.lifecycle.lifecycleScope
 import com.github.jacastromad.edita.ui.theme.EditaTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
+import com.github.jacastromad.edita.EditorViewModel
+import androidx.activity.viewModels
 
 private const val NEWFILE = "Untitled"
 
 // Edita main activity
 class EditorActivity : ComponentActivity() {
+    private val viewModel: EditorViewModel by viewModels()
     lateinit var webView: WebView
     var modified by mutableStateOf(false)
     var fileName by mutableStateOf(NEWFILE)
