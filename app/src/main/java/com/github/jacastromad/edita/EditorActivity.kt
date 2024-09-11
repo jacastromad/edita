@@ -43,33 +43,12 @@ private const val NEWFILE = "Untitled"
 class EditorActivity : ComponentActivity() {
     private val viewModel: EditorViewModel by viewModels()
     lateinit var webView: WebView
-    var modified by mutableStateOf(false)
-    var fileName by mutableStateOf(NEWFILE)
-    private var fileUri by mutableStateOf<Uri?>(null)
     private var darkTheme = mutableStateOf(false)
 
     // ActivityResultLauncher for opening a document
     private val openDocumentLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let {
-            fileUri = it
-            fileName = it.path?.substringAfterLast('/') ?: NEWFILE
-
-            // Retrieve the file name from the content provider or file path
-            if (it.scheme == "content") {
-                val cursor: Cursor? = contentResolver.query(uri, null, null, null, null)
-                cursor.use {
-                    if (it != null && it.moveToFirst()) {
-                        fileName = it.getString(it.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
-                    }
-                }
-            } else {
-                fileName = it.path ?: ""
-                val cut = fileName.lastIndexOf('/')
-                if (cut != -1) {
-                    fileName = fileName.substring(cut + 1)
-                }
-            }
-
+            viewModel.setFilename(getFilenameFromUri(it))
             loadFileContent(it)
         }
     }
@@ -124,7 +103,27 @@ class EditorActivity : ComponentActivity() {
     inner class JavaScriptInterface {
         @android.webkit.JavascriptInterface
         fun setModified(value: Boolean) {
-            modified = value
+            viewModel.setModified(value)
+        }
+    }
+
+    private fun getFilenameFromUri(uri: Uri): String {
+        return if (uri.scheme == "content") {
+            val cursor: Cursor? = contentResolver.query(uri, null, null, null, null)
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    return it.getString(it.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
+                }
+            }
+            NEWFILE // Default if content resolver fails
+        } else {
+            val filename = uri.path ?: ""
+            val cut = filename.lastIndexOf('/')
+            if (cut != -1) {
+                filename.substring(cut + 1)
+            } else {
+                uri.path ?: NEWFILE // Fallback if path parsing fails
+            }
         }
     }
 
@@ -202,11 +201,9 @@ class EditorActivity : ComponentActivity() {
 
     // Creates a new file in the editor
     fun newFile() {
-        fileName = NEWFILE
-        fileUri = null
+        viewModel.addNewFile()
         webView.evaluateJavascript("javascript:setEditorContent(\"\");", null)
         webView.evaluateJavascript("javascript:editor.getSession().getUndoManager().reset();", null)
-        modified = false
     }
 
     // Opens a file picker to load a file into the editor
@@ -216,7 +213,7 @@ class EditorActivity : ComponentActivity() {
 
     // Saves the current file content
     fun saveFile() {
-        createDocumentLauncher.launch(fileName)
+        createDocumentLauncher.launch(viewModel.getFilename())
     }
 
     // Calls ACE editor undo
@@ -256,27 +253,28 @@ class EditorActivity : ComponentActivity() {
                 content = value?.fromJSON() ?: ""
                 contentResolver.openOutputStream(uri, "wt")?.use { outputStream ->
                     outputStream.write(content.toByteArray())
-                    Log.d("Edita", "File saved successfully")
+                    Log.d("jscode", "File saved successfully")
                 }
             }
 
-            // TODO: duplicated code (openDocumentLauncher)
-            if (uri.scheme == "content") {
-                val cursor: Cursor? = contentResolver.query(uri, null, null, null, null)
-                cursor.use {
-                    if (it != null && it.moveToFirst()) {
-                        fileName = it.getString(it.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
-                    }
-                }
-            } else {
-                fileName = uri.path ?: ""
-                val cut = fileName.lastIndexOf('/')
-                if (cut != -1) {
-                    fileName = fileName.substring(cut + 1)
-                }
-            }
-            modified = false
+            // Use the helper function to set the filename
+            viewModel.setFilename(getFilenameFromUri(uri))
+            viewModel.setModified(false)
         }
+    }
+
+    fun modified(): Boolean = viewModel.getModified()
+    fun filename(): String = viewModel.getFilename()
+    fun filenamesList(): List<String> = viewModel.filenamesList()
+    fun activeTab(): Int = viewModel.activeTab()
+    fun setTab(tab: Int) {
+        viewModel.switchTo(tab)
+        updateEditor()
+    }
+    fun closeTab(tab: Int) {
+        viewModel.switchTo(tab)
+        viewModel.closeFile()
+        updateEditor()
     }
 }
 
@@ -367,7 +365,7 @@ fun Editor(darkTheme: MutableState<Boolean>) {
                     title = { Text(text = "Edita") },
                     actions = {
                         IconButton(onClick = {
-                            if (activity.modified) {
+                            if (activity.modified()) {
                                 showDiscardDialog = true
                                 onDialogConfirm = {
                                     activity.newFile()
@@ -382,7 +380,7 @@ fun Editor(darkTheme: MutableState<Boolean>) {
                             )
                         }
                         IconButton(onClick = {
-                            if (activity.modified) {
+                            if (activity.modified()) {
                                 showDiscardDialog = true
                                 onDialogConfirm = {
                                     activity.openFile()
@@ -527,8 +525,8 @@ fun Editor(darkTheme: MutableState<Boolean>) {
                 BottomAppBar(
                     content = {
                         Column {
-                            Text(text = "File: ${activity.fileName}")
-                            Text(text = if (activity.modified) "*** Unsaved changes ***" else "")
+                            Text(text = "File: ${activity.filename()}")
+                            Text(text = if (activity.modified()) "*** Unsaved changes ***" else "")
                         }
                     }
                 )
