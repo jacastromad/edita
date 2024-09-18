@@ -34,10 +34,15 @@ import androidx.lifecycle.lifecycleScope
 import com.github.jacastromad.edita.ui.theme.EditaTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.github.jacastromad.edita.EditorViewModel
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
 
-private const val NEWFILE = "Untitled"
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
+
 
 // Edita main activity
 class EditorActivity : ComponentActivity() {
@@ -115,14 +120,14 @@ class EditorActivity : ComponentActivity() {
                     return it.getString(it.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
                 }
             }
-            NEWFILE // Default if content resolver fails
+            NEWFILENAME // Default if content resolver fails
         } else {
             val filename = uri.path ?: ""
             val cut = filename.lastIndexOf('/')
             if (cut != -1) {
                 filename.substring(cut + 1)
             } else {
-                uri.path ?: NEWFILE // Fallback if path parsing fails
+                uri.path ?: NEWFILENAME // Fallback if path parsing fails
             }
         }
     }
@@ -139,7 +144,6 @@ class EditorActivity : ComponentActivity() {
             while (!::webView.isInitialized) {
                 delay(50)
             }
-            updateACEEditor()
             val context = this@EditorActivity
             if (Preferences.getTheme() == "system") {
                 darkTheme.value = when (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
@@ -150,6 +154,7 @@ class EditorActivity : ComponentActivity() {
             } else {
                 darkTheme.value = Preferences.getTheme() == "dark"
             }
+            updateACEEditor()
         }
     }
 
@@ -165,55 +170,65 @@ class EditorActivity : ComponentActivity() {
             "dark" -> "twilight"
             else -> "dawn"
         }
-        webView.evaluateJavascript(
-            "javascript:editor.setTheme(\"ace/theme/${aceTheme}\");",
-            null
-        )
-        webView.evaluateJavascript(
-            "javascript:editor.setFontSize(${Preferences.getFontSize()});",
-            null
-        )
-        webView.evaluateJavascript(
-            "javascript:editor.setOption(\"showLineNumbers\", ${Preferences.getNumLines()});",
-            null
-        )
-        webView.evaluateJavascript(
-                "javascript:editor.setOption(\"showGutter\", ${Preferences.getNumLines()});",
-        null
-        )
-        webView.evaluateJavascript(
-            "javascript:editor.setOption(\"enableAutoIndent\", ${Preferences.getAutoIndent()});",
-            null
-        )
-        webView.evaluateJavascript(
-            "javascript:editor.setOption(\"highlightSelectedWord\", ${Preferences.getHlSelection()});",
-            null
-        )
-        webView.evaluateJavascript(
-            "javascript:editor.setOption(\"showInvisibles\", ${Preferences.getShowInvisibles()});",
-            null
-        )
-        webView.evaluateJavascript(
-            "javascript:editor.session.setUseWrapMode(${Preferences.getWordWrap()});",
-            null
-        )
+
+        val script = StringBuilder().apply {
+            append("editor.setTheme(\"ace/theme/$aceTheme\");")
+            append("editor.setFontSize(${Preferences.getFontSize()});")
+            append("editor.setOption(\"showLineNumbers\", ${Preferences.getNumLines()});")
+            append("editor.setOption(\"showGutter\", ${Preferences.getNumLines()});")
+            append("editor.setOption(\"enableAutoIndent\", ${Preferences.getAutoIndent()});")
+            append("editor.setOption(\"highlightSelectedWord\", ${Preferences.getHlSelection()});")
+            append("editor.setOption(\"showInvisibles\", ${Preferences.getShowInvisibles()});")
+            append("sessions.forEach(function(session) {")
+            append("  session.setOption(\"wrap\", ${Preferences.getWordWrap()});")
+            append("});")
+        }.toString()
+
+        webView.evaluateJavascript("javascript:$script", null)
     }
 
     // Creates a new file in the editor
     fun newFile() {
         viewModel.addNewFile()
-        webView.evaluateJavascript("javascript:setEditorContent(\"\");", null)
-        webView.evaluateJavascript("javascript:editor.getSession().getUndoManager().reset();", null)
+        viewModel.switchTo(viewModel.filenamesList().lastIndex)
+        webView.evaluateJavascript("javascript:addSession('');") { result ->
+            webView.evaluateJavascript("javascript:switchSession(${viewModel.activeTab()})", null)
+            updateACEEditor()
+        }
     }
 
     // Opens a file picker to load a file into the editor
     fun openFile() {
-        openDocumentLauncher.launch(arrayOf("*/*"))
+        webView.evaluateJavascript("javascript:getSessionContent();") { content ->
+            if (content.fromJSON() == "" && viewModel.getFilename() == NEWFILENAME && !viewModel.getModified()) {
+                openDocumentLauncher.launch(arrayOf("*/*"))
+            } else {
+                viewModel.addNewFile()
+                webView.evaluateJavascript("javascript:addSession('');") { result ->
+                    webView.evaluateJavascript("javascript:switchSession(${viewModel.activeTab()})", null)
+                    openDocumentLauncher.launch(arrayOf("*/*"))
+                    updateACEEditor()
+                }
+            }
+        }
     }
 
     // Saves the current file content
     fun saveFile() {
         createDocumentLauncher.launch(viewModel.getFilename())
+    }
+
+    fun setTab(tab: Int) {
+        viewModel.switchTo(tab)
+        webView.evaluateJavascript("javascript:switchSession(${viewModel.activeTab()});", null)
+    }
+
+    fun closeTab(i: Int) {
+        viewModel.closeFile(i)
+        webView.evaluateJavascript("javascript:removeSession(${i});") {
+            webView.evaluateJavascript("javascript:switchSession(${viewModel.activeTab()});", null)
+            updateACEEditor()
+        }
     }
 
     // Calls ACE editor undo
@@ -239,27 +254,26 @@ class EditorActivity : ComponentActivity() {
         val fileContent = inputStream?.bufferedReader().use { it?.readText() } ?: ""
         inputStream?.close()
 
-        val content = fileContent.toJSON()
-
-        webView.evaluateJavascript("javascript:setEditorContent(\"$content\");", null)
-        webView.evaluateJavascript("javascript:editor.getSession().getUndoManager().reset();", null)
+        val script = StringBuilder().apply {
+            append("javascript:setSessionContent(\"${fileContent.toJSON()}\");")
+        }.toString()
+        webView.evaluateJavascript(script, null)
     }
 
     // Saves file content to the given URI
     private fun saveFileContent(uri: Uri) {
         var content: String
         if (::webView.isInitialized) {
-            webView.evaluateJavascript("javascript:editor.getValue();") { value ->
+            webView.evaluateJavascript("javascript:getSessionContent();") { value ->
                 content = value?.fromJSON() ?: ""
                 contentResolver.openOutputStream(uri, "wt")?.use { outputStream ->
                     outputStream.write(content.toByteArray())
                     Log.d("jscode", "File saved successfully")
                 }
+                // Use the helper function to set the filename
+                viewModel.setFilename(getFilenameFromUri(uri))
+                viewModel.setModified(false)
             }
-
-            // Use the helper function to set the filename
-            viewModel.setFilename(getFilenameFromUri(uri))
-            viewModel.setModified(false)
         }
     }
 
@@ -267,14 +281,96 @@ class EditorActivity : ComponentActivity() {
     fun filename(): String = viewModel.getFilename()
     fun filenamesList(): List<String> = viewModel.filenamesList()
     fun activeTab(): Int = viewModel.activeTab()
-    fun setTab(tab: Int) {
-        viewModel.switchTo(tab)
-        updateEditor()
+}
+
+@Composable
+fun FileTabs(
+    filenames: List<String>,
+    currentIndex: Int,
+    onTabSelected: (Int) -> Unit,
+    onAddTab: () -> Unit,
+    onCloseTab: (Int) -> Unit
+) {
+    ScrollableTabRow(selectedTabIndex = currentIndex) {
+        // Tabs for each file
+        filenames.forEachIndexed { index, title ->
+            Tab(
+                selected = currentIndex == index,
+                onClick = { onTabSelected(index) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Title of the tab
+                    Text(
+                        text = title,
+                        modifier = Modifier.padding(end = 8.dp), // Space between text and close icon
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis // Ellipsis if text is too long
+                    )
+
+                    // Show close button only on the active tab
+                    if (currentIndex == index) {
+                        IconButton(
+                            onClick = { onCloseTab(index) }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close Tab"
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add Button at the end of the tab row
+        IconButton(
+            onClick = { onAddTab() }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Add Tab"
+            )
+        }
     }
-    fun closeTab(tab: Int) {
-        viewModel.switchTo(tab)
-        viewModel.closeFile()
-        updateEditor()
+}
+
+
+// Composable function to create the find bar.
+@Composable
+fun FindBar(
+    findQuery: String,
+    onFindQueryChange: (String) -> Unit,
+    onFind: () -> Unit,
+    onCloseBar: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .padding(8.dp)
+    ) {
+        TextField(
+            value = findQuery,
+            onValueChange = onFindQueryChange,
+            modifier = Modifier.weight(1f),
+            placeholder = { Text("Search...") }
+        )
+        IconButton(onClick = onFind) {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = "Find"
+            )
+        }
+        IconButton(onClick = onCloseBar) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = "Close Search"
+            )
+        }
     }
 }
 
@@ -313,39 +409,6 @@ fun EditorWebView(modifier: Modifier = Modifier) {
     )
 }
 
-// Composable function to create the find bar.
-@Composable
-fun FindBar(
-    findQuery: String,
-    onFindQueryChange: (String) -> Unit,
-    onFind: () -> Unit,
-    onCloseBar: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .padding(8.dp)
-    ) {
-        TextField(
-            value = findQuery,
-            onValueChange = onFindQueryChange,
-            modifier = Modifier.weight(1f),
-            placeholder = { Text("Search...") }
-        )
-        IconButton(onClick = onFind) {
-            Icon(
-                imageVector = Icons.Filled.Search,
-                contentDescription = "Find"
-            )
-        }
-        IconButton(onClick = onCloseBar) {
-            Icon(
-                imageVector = Icons.Filled.Close,
-                contentDescription = "Close Search"
-            )
-        }
-    }
-}
-
 // Edita Main composable function
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -365,29 +428,7 @@ fun Editor(darkTheme: MutableState<Boolean>) {
                     title = { Text(text = "Edita") },
                     actions = {
                         IconButton(onClick = {
-                            if (activity.modified()) {
-                                showDiscardDialog = true
-                                onDialogConfirm = {
-                                    activity.newFile()
-                                }
-                            } else {
-                                activity.newFile()
-                            }
-                        }) {
-                            Icon(
-                                imageVector = Icons.Filled.Create,
-                                contentDescription = "New file",
-                            )
-                        }
-                        IconButton(onClick = {
-                            if (activity.modified()) {
-                                showDiscardDialog = true
-                                onDialogConfirm = {
-                                    activity.openFile()
-                                }
-                            } else {
-                                activity.openFile()
-                            }
+                            activity.openFile()
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.FileOpen,
@@ -497,6 +538,27 @@ fun Editor(darkTheme: MutableState<Boolean>) {
                         )
                     }
 
+                    Log.d("FileTabs", "active: ${activity.activeTab()}")
+                    Log.d("FileTabs", "filenames: ${activity.filenamesList()}")
+                    Log.d("FileTabs", "modified: ${activity.modified()}")
+
+                    FileTabs(
+                        filenames = activity.filenamesList(),
+                        currentIndex = activity.activeTab(),
+                        onTabSelected = { activity.setTab(it) },
+                        onAddTab = { activity.newFile() },
+                        onCloseTab = {
+                            if (activity.modified()) {
+                                showDiscardDialog = true
+                                onDialogConfirm = {
+                                    activity.closeTab(it)
+                                }
+                            } else {
+                                activity.closeTab(it)
+                            }
+                        }
+                    )
+
                     EditorWebView(Modifier.weight(1f))
 
                     if (showDiscardDialog) {
@@ -520,16 +582,6 @@ fun Editor(darkTheme: MutableState<Boolean>) {
                         )
                     }
                 }
-            },
-            bottomBar = {
-                BottomAppBar(
-                    content = {
-                        Column {
-                            Text(text = "File: ${activity.filename()}")
-                            Text(text = if (activity.modified()) "*** Unsaved changes ***" else "")
-                        }
-                    }
-                )
             },
             modifier = Modifier.imePadding()
         )

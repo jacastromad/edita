@@ -1,70 +1,69 @@
 package com.github.jacastromad.edita
 
+import android.util.Log
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
+
+const val NEWFILENAME = "Untitled"
 
 class EditorViewModel : ViewModel() {
 
     // Data class to represent each file's state
     data class FileState(
-        var content: String = "",
         var modified: Boolean = false,
-        var filename: String = "Untitled"
+        var filename: String = NEWFILENAME
     )
 
     // Map to hold multiple file states, each with a unique tab ID
-    private val files = mutableMapOf<Int, MutableState<FileState>>()
+    private val files = mutableStateListOf<FileState>()
 
     // Track the active file (tab)
     private var index by mutableIntStateOf(0)
 
     // Initialize the first file state
     init {
-        files[index] = mutableStateOf(FileState())
+        files.add(FileState())
     }
 
     // Function to switch active tab
     fun switchTo(newIndex: Int) {
-        if (files.containsKey(newIndex)) {
+        if (newIndex in files.indices) {
             index = newIndex
         }
     }
 
     // Getters for current file (files[index] should never be null)
-    fun getContent(): String = files[index]!!.value.content
-    fun getFilename(): String = files[index]!!.value.filename
-    fun getModified(): Boolean = files[index]!!.value.modified
+    fun getFilename(): String = files[index]!!.filename
+    fun getModified(): Boolean = files[index]!!.modified
 
-    private fun updateCurrentFile(update: (FileState) -> FileState) {
-        files[index]?.value = files[index]?.value?.let(update) ?: return
+    fun setFilename(filename: String) {
+        files[index] = files[index].copy(filename = filename)
     }
-
-    // Setters for current file
-    fun setContent(content: String) = updateCurrentFile { it.copy(content = content) }
-    fun setFilename(filename: String) = updateCurrentFile { it.copy(filename = filename) }
-    fun setModified(modified: Boolean) = updateCurrentFile { it.copy(modified = modified) }
+    fun setModified(modified: Boolean) {
+        files[index] = files[index].copy(modified = modified)
+        Log.d("MODIFIED", "$modified")
+    }
 
     // Function to add a new tab (file)
     fun addNewFile() {
-        val newIndex = files.size
-        files[newIndex] = mutableStateOf(FileState())
-        index = newIndex
+        files.add(FileState())
+        index = files.lastIndex
     }
 
     // Close current file
-    fun closeFile() {
-        files.remove(index)
-        if (files.isEmpty()) {
-            addNewFile() // Always ensure at least one empty file exists
-        } else {
-            // Switch to the first remaining file
-            index = files.keys.first()
+    fun closeFile(i: Int) {
+        if (i in files.indices) {
+            files.removeAt(i)
+            if (files.size == 0) {
+                addNewFile()
+            }
+            index = if (i > 0) i-1 else 0
         }
     }
 
     // Return a list of filenames
-    fun filenamesList(): List<String> = files.values.map {
-        "${it.value.filename} " + if (it.value.modified) "* " else ""
+    fun filenamesList(): List<String> = files.map {
+        "${it.filename}" + if (it.modified) " *" else ""
     }
 
     // Return current tab (index)

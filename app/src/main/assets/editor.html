@@ -25,21 +25,65 @@
     editor.setHighlightActiveLine(false);
     editor.setOption("indentedSoftWrap", false);
 
+    // List to hold multiple sessions (files/tabs)
+    var sessions = [];
+    var current = null;
+
+    // Change listener (sets the modified flat to true)
+    var changeListener = function(delta) {
+      if (typeof Android !== 'undefined' && Android.setModified) {
+      Android.setModified(true);
+      }
+    };
+
     function setEditorTheme(theme) {
       editor.setTheme("ace/theme/"+theme);
     }
 
-    function setEditorContent(content) {
-      editor.setValue(content, -1)
-      Android.setModified(false)
+    function addSession(content) {
+      var session = ace.createEditSession(content);
+      session.on("change", changeListener);
+      sessions.push(session);
+      console.log(sessions)
     }
 
-    editor.session.on("change", function(delta) {
-      if (typeof Android !== 'undefined' && Android.setModified) {
-        Android.setModified(true);
+    function switchSession(i) {
+      if (i >= 0 && i < sessions.length) {
+        current = i
+        editor.setSession(sessions[current])
       }
-    });
+    }
 
+    function removeSession(i) {
+      if (i >= 0 && i < sessions.length) {
+        sessions.splice(i, 1);
+      }
+      if (sessions.length < 1) {
+        addSession("");
+        switchSession(0);
+      }
+    }
+
+    function setSessionContent(content) {
+      sessions[current].off("change", changeListener);
+      sessions[current].setValue(content, -1);
+      sessions[current].on("change", changeListener);
+    }
+
+    function getSessionContent() {
+      return sessions[current].getValue();
+    }
+
+    // Expose functions to Android
+    window.addSession = addSession;
+    window.switchSession = switchSession;
+    window.removeSession = removeSession;
+    window.setSessionContent = setSessionContent;
+    window.getSessionContent = getSessionContent;
+
+    // Initialize with one empty session
+    addSession("");
+    switchSession(0);
   </script>
 </body>
 </html>
