@@ -99,6 +99,8 @@ fun SettingsScreen(goBack: () -> Unit) {
                                     Preferences.setFontSize(size)
                                 }
                             },
+                            singleLine = true,
+                            maxLines = 1,
                             keyboardOptions = KeyboardOptions.Default.copy(
                                 keyboardType = KeyboardType.Number
                             ),
@@ -201,6 +203,8 @@ fun SettingsScreen(goBack: () -> Unit) {
                                     Preferences.setTabStop(stop)
                                 }
                             },
+                            singleLine = true,
+                            maxLines = 1,
                             keyboardOptions = KeyboardOptions.Default.copy(
                                 keyboardType = KeyboardType.Number
                             ),
