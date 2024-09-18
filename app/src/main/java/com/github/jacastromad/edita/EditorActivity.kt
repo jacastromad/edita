@@ -436,6 +436,22 @@ fun Editor(darkTheme: MutableState<Boolean>) {
                             )
                         }
                         IconButton(onClick = {
+                            activity.undo()
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Undo,
+                                contentDescription = "Undo",
+                            )
+                        }
+                        IconButton(onClick = {
+                            activity.redo()
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Redo,
+                                contentDescription = "Redo",
+                            )
+                        }
+                        IconButton(onClick = {
                             activity.saveFile()
                         }) {
                             Icon(
@@ -477,39 +493,6 @@ fun Editor(darkTheme: MutableState<Boolean>) {
                                     text = {
                                         Row {
                                             Icon(
-                                                imageVector = Icons.AutoMirrored.Filled.Undo,
-                                                contentDescription = "Undo",
-                                                modifier = Modifier.padding(end = 8.dp)
-                                            )
-                                            Text("Undo")
-                                        }
-                                    },
-                                    onClick = {
-                                        showMenu = false
-                                        activity.undo()
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = {
-                                        Row {
-                                            Icon(
-                                                imageVector = Icons.AutoMirrored.Filled.Redo,
-                                                contentDescription = "Redo",
-                                                modifier = Modifier.padding(end = 8.dp)
-                                            )
-                                            Text("Redo")
-                                        }
-                                    },
-                                    onClick = {
-                                        showMenu = false
-                                        activity.redo()
-                                    }
-                                )
-                                Divider()
-                                DropdownMenuItem(
-                                    text = {
-                                        Row {
-                                            Icon(
                                                 imageVector = Icons.Filled.Settings,
                                                 contentDescription = "Settings",
                                                 modifier = Modifier.padding(end = 8.dp)
@@ -537,10 +520,6 @@ fun Editor(darkTheme: MutableState<Boolean>) {
                             onCloseBar = { showFindArea = false }
                         )
                     }
-
-                    Log.d("FileTabs", "active: ${activity.activeTab()}")
-                    Log.d("FileTabs", "filenames: ${activity.filenamesList()}")
-                    Log.d("FileTabs", "modified: ${activity.modified()}")
 
                     FileTabs(
                         filenames = activity.filenamesList(),
