@@ -40,9 +40,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextOverflow
 
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
-
 
 // Edita main activity
 class EditorActivity : ComponentActivity() {
@@ -394,14 +391,13 @@ fun EditorWebView(modifier: Modifier = Modifier) {
                 // Add JavaScript interface
                 addJavascriptInterface(activity.JavaScriptInterface(), "Android")
                 activity.webView = this
-                loadUrl(editorHTML)
-
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
                         activity.updateEditor()
                     }
                 }
+                loadUrl(editorHTML)
             }
         },
         update = { },

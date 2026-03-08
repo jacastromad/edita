@@ -10,8 +10,8 @@ class EditorViewModel : ViewModel() {
 
     // Data class to represent each file's state
     data class FileState(
-        var modified: Boolean = false,
-        var filename: String = NEWFILENAME
+        val modified: Boolean = false,
+        val filename: String = NEWFILENAME
     )
 
     // Map to hold multiple file states, each with a unique tab ID
@@ -33,8 +33,8 @@ class EditorViewModel : ViewModel() {
     }
 
     // Getters for current file (files[index] should never be null)
-    fun getFilename(): String = files[index]!!.filename
-    fun getModified(): Boolean = files[index]!!.modified
+    fun getFilename(): String = files[index].filename
+    fun getModified(): Boolean = files[index].modified
 
     fun setFilename(filename: String) {
         files[index] = files[index].copy(filename = filename)
