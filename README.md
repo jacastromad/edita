@@ -1,7 +1,5 @@
 # Edita
 
-![Edita Text Editor](featgraph.png)
-
 ## Overview
 
 Just a simple, free, open source, monospace text editor. No ads. No premium version. **Edita** does not collect or transmit any information and runs entirely on your device.
